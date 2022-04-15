@@ -7,17 +7,6 @@ declare module 'vscode' {
 
 	// https://github.com/microsoft/vscode/issues/32592
 
-	/**
-	 * A data provider that provides tree data
-	 */
-	export interface TreeDataProvider<T> {
-		/**
-		 * An optional event to signal that an element or root has changed.
-		 * This will trigger the view to update the changed element/root and its children recursively (if shown).
-		 * To signal that root has changed, do not pass any argument or pass `undefined` or `null`.
-		 */
-		onDidChangeTreeData2?: Event<T | T[] | undefined | null | void>;
-	}
 
 	export interface TreeViewOptions<T> {
 		/**
@@ -27,13 +16,12 @@ declare module 'vscode' {
 	}
 
 	/**
-	 * A class for encapsulating data transferred during a tree drag and drop event.
+	 * A class for encapsulating data transferred during a drag and drop event.
 	 *
-	 * If your `DragAndDropController` implements `handleDrag`, you can use the `value` of the `TreeDataTransferItem`
-	 * to get back the object you put into it so long as the extension that created the `TreeDataTransferItem` runs in the same
-	 * extension host.
+	 * You can use the `value` of the `DataTransferItem` to get back the object you put into it
+	 * so long as the extension that created the `DataTransferItem` runs in the same extension host.
 	 */
-	export class TreeDataTransferItem {
+	export class DataTransferItem {
 		asString(): Thenable<string>;
 		readonly value: any;
 		constructor(value: any);
@@ -41,10 +29,11 @@ declare module 'vscode' {
 
 	/**
 	 * A map containing a mapping of the mime type of the corresponding transferred data.
-	 * Trees that support drag and drop can implement `DragAndDropController.handleDrag` to add additional mime types
-	 * when the drop occurs on an item in the same tree.
+	 * Drag and drop controllers that implement `handleDrag` can additional mime types to the data transfer
+	 * These additional mime types will only be included in the `handleDrop` when the the drag was initiated from
+	 * an element in the same drag and drop controller.
 	 */
-	export class TreeDataTransfer<T extends TreeDataTransferItem = TreeDataTransferItem> {
+	export class DataTransfer<T extends DataTransferItem = DataTransferItem> {
 		/**
 		 * Retrieves the data transfer item for a given mime type.
 		 * @param mimeType The mime type to get the data transfer item for.
@@ -75,7 +64,7 @@ declare module 'vscode' {
 		 * This could be well-defined, existing, mime types, and also mime types defined by the extension.
 		 *
 		 * Each tree will automatically support drops from it's own `DragAndDropController`. To support drops from other trees,
-		 * you will need to add the mime type of that tree. The mime type of a tree is of the format `tree/treeidlowercase`.
+		 * you will need to add the mime type of that tree. The mime type of a tree is of the format `application/vnd.code.tree.treeidlowercase`.
 		 *
 		 * To learn the mime type of a dragged item:
 		 * 1. Set up your `DragAndDropController`
@@ -97,15 +86,15 @@ declare module 'vscode' {
 		 * When the items are dropped on **another tree item** in **the same tree**, your `TreeDataTransferItem` objects
 		 * will be preserved. See the documentation for `TreeDataTransferItem` for how best to take advantage of this.
 		 *
-		 * To add a data transfer item that can be dragged into the editor, use the application specific mime type "resourceurls".
-		 * The data for "resourceurls" should be an array of `toString()`ed Uris. To specify a cursor position in the file,
+		 * To add a data transfer item that can be dragged into the editor, use the application specific mime type "text/uri-list".
+		 * The data for "text/uri-list" should be a string with `toString()`ed Uris separated by newlines. To specify a cursor position in the file,
 		 * set the Uri's fragment to `L3,5`, where 3 is the line number and 5 is the column number.
 		 *
 		 * @param source The source items for the drag and drop operation.
 		 * @param treeDataTransfer The data transfer associated with this drag.
 		 * @param token A cancellation token indicating that drag has been cancelled.
 		 */
-		handleDrag?(source: T[], treeDataTransfer: TreeDataTransfer, token: CancellationToken): Thenable<void> | void;
+		handleDrag?(source: T[], treeDataTransfer: DataTransfer, token: CancellationToken): Thenable<void> | void;
 
 		/**
 		 * Called when a drag and drop action results in a drop on the tree that this `DragAndDropController` belongs too.
@@ -114,8 +103,8 @@ declare module 'vscode' {
 		 *
 		 * @param source The data transfer items of the source of the drag.
 		 * @param target The target tree element that the drop is occurring on.
-		 * @param token TODO @alexr00: When would this operation actually be cancelled?
+		 * @param token A cancellation token indicating that the drop has been cancelled.
 		 */
-		handleDrop(source: TreeDataTransfer, target: T, token: CancellationToken): Thenable<void> | void;
+		handleDrop?(target: T, source: DataTransfer, token: CancellationToken): Thenable<void> | void;
 	}
 }
